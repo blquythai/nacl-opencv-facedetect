@@ -14,6 +14,7 @@ include $(NACL_SDK_ROOT)/tools/common.mk
 
 TARGET=test
 
+CFLAGS=
 test_SOURCES= \
 	geturl_handler.cc \
 	jpeg_mem_src.cc \
@@ -25,7 +26,7 @@ DEPS=
 LIBS=$(DEPS) ppapi_cpp ppapi pthread jpeg naclmounts opencv_objdetect opencv_calib3d opencv_features2d opencv_imgproc opencv_core opencv_contrib opencv_flann opencv_highgui z
 
 $(foreach dep,$(DEPS),$(eval $(call DEPEND_RULE,$(dep))))
-$(foreach src,$(test_SOURCES),$(eval $(call COMPILE_RULE,$(src),)))
+$(foreach src,$(test_SOURCES),$(eval $(call COMPILE_RULE,$(src),$(CFLAGS))))
 
 ifeq ($(CONFIG),Release)
 $(eval $(call LINK_RULE,test_unstripped,$(test_SOURCES),$(LIBS),$(DEPS)))

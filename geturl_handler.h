@@ -32,6 +32,7 @@ class GetURLHandler {
   int file;
   const static int URL_IMAGE = 1;
   const static int URL_XML = 2;
+  pp::CompletionCallbackFactory<GetURLHandler> cc_factory_;
 
  private:
   GetURLHandler(testInstance* instance_, const std::string& url);
@@ -73,7 +74,6 @@ class GetURLHandler {
   pp::URLLoader url_loader_;  // URLLoader provides an API to download URLs.
   char buffer_[READ_BUFFER_SIZE];  // Temporary buffer for reads.
   std::string url_response_body_;  // Contains accumulated downloaded data.
-  pp::CompletionCallbackFactory<GetURLHandler> cc_factory_;
 
   GetURLHandler(const GetURLHandler&);
   void operator=(const GetURLHandler&);

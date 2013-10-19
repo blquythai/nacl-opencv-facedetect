@@ -6,11 +6,6 @@
 #include "ppapi/cpp/var.h"
 
 #include "geturl_handler.h"
-namespace {
-bool IsError(int32_t result) {
-  return ((PP_OK != result) && (PP_OK_COMPLETIONPENDING != result));
-}
-}  // namespace
 
 GetURLHandler* GetURLHandler::Create(testInstance* instance,
                                      const std::string& url) {
@@ -28,8 +23,7 @@ GetURLHandler::GetURLHandler(testInstance* instance,
   url_request_.SetMethod("GET");
 }
 
-GetURLHandler::~GetURLHandler() {
-}
+GetURLHandler::~GetURLHandler() {}
 
 void GetURLHandler::Start() {
   pp::CompletionCallback cc =

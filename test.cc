@@ -1,7 +1,9 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <fstream>
 #include <sstream>
+#include <stdio.h>
 #include "ppapi/cpp/instance.h"
 #include "ppapi/cpp/module.h"
 #include "ppapi/cpp/var.h"
@@ -12,31 +14,55 @@ extern "C" {
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/contrib/contrib.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/objdetect/objdetect.hpp"
 
-#include "filesys/base/Mount.h"
-#include "filesys/base/MountManager.h"
-#include "filesys/memory/MemMount.h"
+#include "naclmounts/base/Mount.h"
+#include "naclmounts/base/MountManager.h"
+#include "naclmounts/memory/MemMount.h"
 
+#include "test.h"
 #include "jpeg_mem_src.h"
 #include "geturl_handler.h"
 
-using namespace std;
-using namespace cv;
+Mat testInstance::norm_0_255(InputArray _src){
+    Mat src = _src.getMat();
+    // Create and return normalized image
+    Mat dst;
+    switch(src.channels()){
+        case 1:
+            cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC1);
+            break;
+        case 3:
+            cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC3);
+            break;
+        default:
+            src.copyTo(dst);
+            break;
+    }
+    return dst;
+}
 
-/// The Instance class.  One of these exists for each instance of your NaCl
-/// module on the web page.  The browser will ask the Module object to create
-/// a new Instance for each occurence of the <embed> tag that has these
-/// attributes:
-///     type="application/x-nacl"
-///     src="<PROJECT_NAME>.nmf"
-/// To communicate with the browser, you must override HandleMessage() for
-/// receiving messages from the borwser, and use PostMessage() to send messages
-/// back to the browser.  Note that this interface is entirely asynchronous.
+void testInstance::read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
+    std::ifstream file(filename.c_str(), ifstream::in);
+    if (!file) {
+        string error_message = "No valid input file was given, please check the given filename.";
+        CV_Error(CV_StsBadArg, error_message);
+    }
+    string line, path, classlabel;
+    while (getline(file, line)) {
+        stringstream liness(line);
+        getline(liness, path, separator);
+        getline(liness, classlabel);
+        if(!path.empty() && !classlabel.empty()) {
+            images.push_back(imread(path, 0));
+            labels.push_back(atoi(classlabel.c_str()));
+        }
+    }
+}
 
-/* Read JPEG image from a memory segment */
-
+/* Read first AJAX call to and parse the string to get the data (src of the image, width, height) */
 void testInstance::HandleMessage(const pp::Var& var_message) {
 	// download the url in the var_message
 	stringstream convert;
@@ -48,50 +74,10 @@ void testInstance::HandleMessage(const pp::Var& var_message) {
 	convert2 >> this->height;
 	this->url = data.substr(data.find_last_of('|')+1, data.length());
 	this->handler = GetURLHandler::Create(this, this->url);
-	this->handler->file = GetURLHandler::URL_IMAGE;
+	this->handler->file = GetURLHandler::URL_IMAGE; // mark the handler saying we are getting the image
 	if(this->handler != NULL){
 		this->handler->Start();
 	}
-	// test core
-	// create new 320x240 image
-	//Mat img(3, 6, 3), img2(3,6,3);
-	// create a 100x100x100 8-bit array
-	//int sz[] = {100, 100, 100};
-	//Mat bigCube(3, sz, CV_8U, Scalar::all(0));
-	// make a 7x7 complex matrix filled with 1+3j.
-	//Mat M(7,7,CV_32FC2,Scalar(1,3));
-	// and now turn M to a 100x60 15-channel 8-bit matrix.
-	// The old content will be deallocated
-	//Mat A = Mat::eye(4, 4, CV_32F)*0.1;
-	//M.create(100,60,CV_8UC(15));
-	// check core dft, with out this one, the blur function of imgproc will fail to be recognized, it's a bizarre error.
-/*
-	dft(img, img2);
-	// TODO(sdk_user): 1. Make this function handle the incoming message.
-	// test imgproc module
-	blur(img, img2, Size(3,3));
-	// test flann
-	flann::IndexParams params;
-	// Test libpng
-	//png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	// Test highgui
-        //(1) jpeg compression
-        vector<uchar> buff;//buffer for coding
-        vector<int> param = vector<int>(2);
-        param[0]=CV_IMWRITE_JPEG_QUALITY;
-        param[1]=95;//default(95) 0-100
-        imencode(".jpg",img,buff,param);
-	cvLoadImage("test.jpg");
-	// these function belong to imgproc module, but putting it here,
-	// the objdetect module will fail
-	cvtColor(img, img, CV_BGR2Luv);
-	resize(img, img2, img2.size(), 0, 0, INTER_NEAREST);
-	Canny(img, img2, 1.0, 1.0);
-	// test objdetect
-	String face_cascade_name = "haarcascade_frontalface_alt.xml";
-	CascadeClassifier face_cascade;
-        face_cascade.load(face_cascade_name);
-*/
 }
 
 void testInstance::HandleImage(const string& message){
@@ -157,7 +143,7 @@ void testInstance::CreateMemFile(const string& content, const string& filename){
 	mm->AddMount(mnt, "/");
 	int fd = kp->open(filename, O_WRONLY | O_CREAT, 0644);
 	if(fd == -1){
-		ss << "--(!)Error creating cascade classifier";
+		ss << "--(!) Error creating cascade classifier";
 		this->PostMessage(pp::Var(ss.str()));
 		return;
 	}
@@ -165,22 +151,27 @@ void testInstance::CreateMemFile(const string& content, const string& filename){
 	kp->close(fd);
 	this->classifierCreated = true;
 
-	/* TEST LOADING THE XML FILE FROM THE MEM STORAGE//
+	// TEST LOADING THE XML FILE FROM THE MEM STORAGE//
 	// load xml face cascade to detect face
-	FileStorage fs(cascadeFilename, FileStorage::READ);
-	fs.open(cascadeFilename, FileStorage::READ);
-	if(!fs.isOpened())
-		this->PostMessage(pp::Var("Failed to open file"));
-	fs.getFirstTopLevelNode();
-	int size1 = (int)fs["test"];
-	fs.release();
-	*/
+    fprintf(stderr, "[NACL Log]: Printing error to stderr!?!\n");
+	FileStorage fs(filename, FileStorage::READ);
+    fprintf(stderr, "[NACL Log]: Opening the file using FileStorage::open?!?!\n");
+    bool ok = fs.open(filename, FileStorage::READ);
+    fprintf(stderr, "[NACL Log]: Finished this fs.open thing!\n");
+    fprintf(stderr, "[NACL Log]: Finished this fs.open thing!\n");
+    if(!fs.isOpened())
+        printf("Failed opening cascade..\n");
+    fs.getFirstTopLevelNode();
+    //int size1 = (int)fs["test"];
+    fs.release();
+	//FileNode t = fs.getFirstTopLevelNode();
+    fprintf(stderr, "[NACL Log]: Finished fetching the first node!\n");
 }
 
 void testInstance::RecognizeFace(){
 	// stream message for debugging
 	stringstream ss;
-	const char* cascadeFilename = "haarcascade_frontalface_alt.xml";
+	const char* cascadeFilename = "/haarcascade_frontalface_alt.xml";
 	CascadeClassifier face_cascade;
 	face_cascade.load(cascadeFilename);
 	if( !face_cascade.load(cascadeFilename) ){ 
@@ -212,25 +203,25 @@ void testInstance::RecognizeFace(){
 /// an instance of your NaCl module on the web page.  The browser creates a new
 /// instance for each <embed> tag with type="application/x-nacl".
 class testModule : public pp::Module {
- public:
-  testModule() : pp::Module() {}
-  virtual ~testModule() {}
+    public:
+        testModule() : pp::Module() {}
+        virtual ~testModule() {}
 
-  /// Create and return a testInstance object.
-  /// @param[in] instance The browser-side instance.
-  /// @return the plugin-side instance.
-  virtual pp::Instance* CreateInstance(PP_Instance instance) {
-    return new testInstance(instance);
-  }
+        /// Create and return a testInstance object.
+        /// @param[in] instance The browser-side instance.
+        /// @return the plugin-side instance.
+        virtual pp::Instance* CreateInstance(PP_Instance instance) {
+            return new testInstance(instance);
+        }
 };
 
 namespace pp {
-/// Factory function called by the browser when the module is first loaded.
-/// The browser keeps a singleton of this module.  It calls the
-/// CreateInstance() method on the object you return to make instances.  There
-/// is one instance per <embed> tag on the page.  This is the main binding
-/// point for your NaCl module with the browser.
-Module* CreateModule() {
-  return new testModule();
-}
+    /// Factory function called by the browser when the module is first loaded.
+    /// The browser keeps a singleton of this module.  It calls the
+    /// CreateInstance() method on the object you return to make instances.  There
+    /// is one instance per <embed> tag on the page.  This is the main binding
+    /// point for your NaCl module with the browser.
+    Module* CreateModule() {
+        return new testModule();
+    }
 }  // namespace pp

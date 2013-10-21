@@ -6,7 +6,6 @@
 # GNU Make based build file.  For details on GNU Make see:
 #   http://www.gnu.org/software/make/manual/make.html
 #
-
 VALID_TOOLCHAINS:=glibc
 
 NACL_SDK_ROOT:=$(NACL_SDK_ROOT)
@@ -36,3 +35,8 @@ $(eval $(call LINK_RULE,test,$(test_SOURCES),$(LIBS),$(DEPS)))
 endif
 
 $(eval $(call NMF_RULE,$(TARGET),))
+
+.PHONY: opencv
+opencv:
+	cd ~/apps/OpenCV-2.4.2/nacl/m32 && make opencv_core -j8 && \
+	cp lib/libopencv_core.so.2.4.2 $(NACL_PREFIX)/lib32/libopencv_core.so.2.4.2

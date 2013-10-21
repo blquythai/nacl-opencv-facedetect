@@ -26,43 +26,8 @@ extern "C" {
 #include "jpeg_mem_src.h"
 #include "geturl_handler.h"
 
-Mat testInstance::norm_0_255(InputArray _src){
-    Mat src = _src.getMat();
-    // Create and return normalized image
-    Mat dst;
-    switch(src.channels()){
-        case 1:
-            cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC1);
-            break;
-        case 3:
-            cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC3);
-            break;
-        default:
-            src.copyTo(dst);
-            break;
-    }
-    return dst;
-}
-
-void testInstance::read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
-    std::ifstream file(filename.c_str(), ifstream::in);
-    if (!file) {
-        string error_message = "No valid input file was given, please check the given filename.";
-        CV_Error(CV_StsBadArg, error_message);
-    }
-    string line, path, classlabel;
-    while (getline(file, line)) {
-        stringstream liness(line);
-        getline(liness, path, separator);
-        getline(liness, classlabel);
-        if(!path.empty() && !classlabel.empty()) {
-            images.push_back(imread(path, 0));
-            labels.push_back(atoi(classlabel.c_str()));
-        }
-    }
-}
-
-/* Read first AJAX call to and parse the string to get the data (src of the image, width, height) */
+// Read first AJAX call to and parse the string to get the data (src of the
+// image, width, height) 
 void testInstance::HandleMessage(const pp::Var& var_message) {
 	// download the url in the var_message
 	stringstream convert;
@@ -70,49 +35,50 @@ void testInstance::HandleMessage(const pp::Var& var_message) {
 	convert << data.substr(0, data.find_first_of('|'));
 	convert >> this->width;
 	stringstream convert2;
-	convert2 << data.substr(data.find_first_of('|')+1, data.find_last_of('|')-data.find_first_of('|')-1);
+	convert2 << data.substr(data.find_first_of('|')+1, 
+            data.find_last_of('|')-data.find_first_of('|')-1);
 	convert2 >> this->height;
 	this->url = data.substr(data.find_last_of('|')+1, data.length());
 	this->handler = GetURLHandler::Create(this, this->url);
-	this->handler->file = GetURLHandler::URL_IMAGE; // mark the handler saying we are getting the image
+    // mark the handler saying we are getting the image
+	this->handler->file = GetURLHandler::URL_IMAGE;
 	if(this->handler != NULL){
 		this->handler->Start();
 	}
 }
 
 void testInstance::HandleImage(const string& message){
-        struct jpeg_decompress_struct cinfo;
-        struct jpeg_error_mgr jerr;
+    struct jpeg_decompress_struct cinfo;
+    struct jpeg_error_mgr jerr;
 
-        // Initialize the JPEG decompression object with default error handling.
-        cinfo.err = jpeg_std_error(&jerr);
-        jpeg_create_decompress(&cinfo);
+    // Initialize the JPEG decompression object with default error handling.
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_decompress(&cinfo);
 
-        // Specify data source for decompression
-        jpeg_mem_src(&cinfo, (unsigned char*)message.c_str(),(unsigned long)message.size());
+    // Specify data source for decompression
+    jpeg_mem_src(&cinfo, (unsigned char*)message.c_str(),(unsigned long)message.size());
 
-        // Read file header, set default decompression parameters
-        (void) jpeg_read_header(&cinfo, TRUE);
+    // Read file header, set default decompression parameters
+    (void) jpeg_read_header(&cinfo, TRUE);
 
-
-        // Start decompressor
-        (void) jpeg_start_decompress(&cinfo);
+    // Start decompressor
+    (void) jpeg_start_decompress(&cinfo);
 
 	// Read the image row by row
 	this->frame = cvCreateImage(cvSize(cinfo.output_width,cinfo.output_height),
                                         IPL_DEPTH_8U, cinfo.output_components);
-        JSAMPARRAY imageBuffer = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, 
+    JSAMPARRAY imageBuffer = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, 
                                      cinfo.output_width*cinfo.output_components, 1);
-        for(unsigned int y=0;y< cinfo.output_height;y++){
-                jpeg_read_scanlines(&cinfo, imageBuffer, 1);
-                uint8_t* dstRow = (uint8_t*) this->frame->imageData + this->frame->widthStep*y;
-                memcpy(dstRow, imageBuffer[0], cinfo.output_width*cinfo.output_components);
-        }
+    for(unsigned int y=0;y< cinfo.output_height;y++){
+        jpeg_read_scanlines(&cinfo, imageBuffer, 1);
+        uint8_t* dstRow = (uint8_t*) this->frame->imageData + this->frame->widthStep*y;
+        memcpy(dstRow, imageBuffer[0], cinfo.output_width*cinfo.output_components);
+    }
 
 	// If the image is 3 channel convert it into BGR (OpenCV standard)
-        if(cinfo.output_components == 3){
-                cvCvtColor(this->frame, this->frame, CV_RGB2BGR);
-        }
+    if(cinfo.output_components == 3){
+        cvCvtColor(this->frame, this->frame, CV_RGB2BGR);
+    }
 
 	// if XML classifier has already been loaded, skip it
 	if(this->classifierCreated == true){
@@ -143,29 +109,22 @@ void testInstance::CreateMemFile(const string& content, const string& filename){
 	mm->AddMount(mnt, "/");
 	int fd = kp->open(filename, O_WRONLY | O_CREAT, 0644);
 	if(fd == -1){
-		ss << "--(!) Error creating cascade classifier";
-		this->PostMessage(pp::Var(ss.str()));
+        fprintf(stderr, "Error creating cascade classifier\n");
 		return;
 	}
 	kp->write(fd, content.c_str(), content.size());
 	kp->close(fd);
 	this->classifierCreated = true;
 
-	// TEST LOADING THE XML FILE FROM THE MEM STORAGE//
-	// load xml face cascade to detect face
-    fprintf(stderr, "[NACL Log]: Printing error to stderr!?!\n");
-	FileStorage fs(filename, FileStorage::READ);
-    fprintf(stderr, "[NACL Log]: Opening the file using FileStorage::open?!?!\n");
+    // TEST LOADING THE XML FILE FROM THE MEM STORAGE
+    // load xml face cascade to detect face
+    FileStorage fs(filename, FileStorage::READ);
     bool ok = fs.open(filename, FileStorage::READ);
-    fprintf(stderr, "[NACL Log]: Finished this fs.open thing!\n");
-    fprintf(stderr, "[NACL Log]: Finished this fs.open thing!\n");
     if(!fs.isOpened())
-        printf("Failed opening cascade..\n");
+        fprintf(stderr, "Failed opening cascade..\n");
     fs.getFirstTopLevelNode();
-    //int size1 = (int)fs["test"];
+    FileNode t = fs.getFirstTopLevelNode();
     fs.release();
-	//FileNode t = fs.getFirstTopLevelNode();
-    fprintf(stderr, "[NACL Log]: Finished fetching the first node!\n");
 }
 
 void testInstance::RecognizeFace(){
@@ -175,28 +134,28 @@ void testInstance::RecognizeFace(){
 	CascadeClassifier face_cascade;
 	face_cascade.load(cascadeFilename);
 	if( !face_cascade.load(cascadeFilename) ){ 
-		ss << "--(!)Error loading cascade classifier";
-		this->PostMessage(pp::Var(ss.str()));
+        fprintf(stderr, "Error loading cascade classifier\n");
 		return;
 	}
 
-        std::vector<Rect> faces;
-        Mat frame_gray;
+    std::vector<Rect> faces;
+    Mat frame_gray;
 
-        cvtColor( Mat(this->frame), frame_gray, CV_BGR2GRAY );
-        equalizeHist( frame_gray, frame_gray );
+    cvtColor( Mat(this->frame), frame_gray, CV_BGR2GRAY );
+    equalizeHist( frame_gray, frame_gray );
 
-        //-- Detect faces
-        face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    //-- Detect faces
+    face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2,
+            0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
 
-        for( unsigned int i = 0; i < faces.size(); i++ )
-        {
-		ss << "Face #" << i << " x=" << faces[i].x << " width=" << faces[i].width 
-			<< " y=" << faces[i].y << " height=" << faces[i].height << "\n";
-                //Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
-        }
+    for( unsigned int i = 0; i < faces.size(); i++ ) {
+        ss << "Face #" << i << " x=" << faces[i].x << " width=" << faces[i].width 
+        << " y=" << faces[i].y << " height=" << faces[i].height << "\n";
+            //Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
+    }
 
 	this->PostMessage(pp::Var(ss.str()));
+    fprintf(stderr, "Finish running face detection\n");
 }
 
 /// The Module class.  The browser calls the CreateInstance() method to create

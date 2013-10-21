@@ -4,11 +4,11 @@
   <title><ProjectName>!</title>
 
   <script type="text/javascript">
-    testModule = null;  // Global application object.
+    naclModule = null;  // Global application object.
     statusText = 'NO-STATUS';
     function moduleRequest() {
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', 'test.jpg', true);
+	xhr.open('GET', 'face1.jpg', true);
 	xhr.responseType = 'arraybuffer';
 	xhr.onload = function(e) {
 	  if (this.status == 200) {
@@ -19,7 +19,7 @@
 	    window.URL = window.URL || window.webkitURL;
 	    img.src = window.URL.createObjectURL(blob);
 	    document.getElementById("img").appendChild(img);
-	    testModule.postMessage(img.width + '|' + img.height + '|' + img.src);
+	    naclModule.postMessage(img.width + '|' + img.height + '|' + img.src);
 	  }
 	};
 
@@ -28,7 +28,7 @@
 
     // Indicate load success.
     function moduleDidLoad() {
-      testModule = document.getElementById('test');
+      naclModule = document.getElementById('test');
       updateStatus('SUCCESS');
     }
 
@@ -43,7 +43,8 @@
     // If the page loads before the Native Client module loads, then set the
     // status message indicating that the module is still loading.  Otherwise,
     // do not change the status message.
-    function pageDidLoad() { if (testModule == null) {
+    function pageDidLoad() { 
+      if (naclModule == null) {
         updateStatus('LOADING...');
       } else {
         // It's possible that the Native Client module onload event fired
@@ -106,7 +107,7 @@
     <embed name="nacl_module"
        id="test"
        width=0 height=0
-       src="glibc/Debug/test.nmf"
+       src="glibc/Debug/facedetect.nmf"
        type="application/x-nacl" />
   </div>
 </p>

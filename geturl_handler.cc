@@ -7,12 +7,12 @@
 
 #include "geturl_handler.h"
 
-GetURLHandler* GetURLHandler::Create(testInstance* instance,
+GetURLHandler* GetURLHandler::Create(facedetectInstance* instance,
                                      const std::string& url) {
   return new GetURLHandler(instance, url);
 }
 
-GetURLHandler::GetURLHandler(testInstance* instance,
+GetURLHandler::GetURLHandler(facedetectInstance* instance,
                              const std::string& url)
     : instance_(instance),
       url_(url),

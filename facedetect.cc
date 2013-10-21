@@ -22,13 +22,13 @@ extern "C" {
 #include "naclmounts/base/MountManager.h"
 #include "naclmounts/memory/MemMount.h"
 
-#include "test.h"
+#include "facedetect.h"
 #include "jpeg_mem_src.h"
 #include "geturl_handler.h"
 
 // Read first AJAX call to and parse the string to get the data (src of the
 // image, width, height) 
-void testInstance::HandleMessage(const pp::Var& var_message) {
+void facedetectInstance::HandleMessage(const pp::Var& var_message) {
 	// download the url in the var_message
 	stringstream convert;
 	string data = var_message.AsString();
@@ -47,7 +47,7 @@ void testInstance::HandleMessage(const pp::Var& var_message) {
 	}
 }
 
-void testInstance::HandleImage(const string& message){
+void facedetectInstance::HandleImage(const string& message){
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
 
@@ -93,13 +93,13 @@ void testInstance::HandleImage(const string& message){
 	}
 }
 
-void testInstance::HandleXml(const string& content){
+void facedetectInstance::HandleXml(const string& content){
 	const char* cascadefilename = "/haarcascade_frontalface_alt.xml";
 	this->CreateMemFile(content, cascadefilename);
 	this->RecognizeFace();
 }
 
-void testInstance::CreateMemFile(const string& content, const string& filename){
+void facedetectInstance::CreateMemFile(const string& content, const string& filename){
 	// stream message for debugging
 	stringstream ss;
 	// test filesys module of nacl-mount to add xml file
@@ -127,7 +127,7 @@ void testInstance::CreateMemFile(const string& content, const string& filename){
     fs.release();
 }
 
-void testInstance::RecognizeFace(){
+void facedetectInstance::RecognizeFace(){
 	// stream message for debugging
 	stringstream ss;
 	const char* cascadeFilename = "/haarcascade_frontalface_alt.xml";
@@ -170,7 +170,7 @@ class testModule : public pp::Module {
         /// @param[in] instance The browser-side instance.
         /// @return the plugin-side instance.
         virtual pp::Instance* CreateInstance(PP_Instance instance) {
-            return new testInstance(instance);
+            return new facedetectInstance(instance);
         }
 };
 

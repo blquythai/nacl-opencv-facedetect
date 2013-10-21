@@ -11,13 +11,13 @@ VALID_TOOLCHAINS:=glibc
 NACL_SDK_ROOT:=$(NACL_SDK_ROOT)
 include $(NACL_SDK_ROOT)/tools/common.mk
 
-TARGET=test
+TARGET=facedetect
 
 CFLAGS=
-test_SOURCES= \
+facedetect_SOURCES= \
 	geturl_handler.cc \
 	jpeg_mem_src.cc \
-	test.cc \
+	facedetect.cc \
 
 # Libraries and dependencies
 # Dependencies need to be rebuild everytime, while libraries are not
@@ -25,13 +25,13 @@ DEPS=
 LIBS=$(DEPS) ppapi_cpp ppapi pthread jpeg naclmounts opencv_objdetect opencv_calib3d opencv_features2d opencv_imgproc opencv_core opencv_contrib opencv_flann opencv_highgui z
 
 $(foreach dep,$(DEPS),$(eval $(call DEPEND_RULE,$(dep))))
-$(foreach src,$(test_SOURCES),$(eval $(call COMPILE_RULE,$(src),$(CFLAGS))))
+$(foreach src,$(facedetect_SOURCES),$(eval $(call COMPILE_RULE,$(src),$(CFLAGS))))
 
 ifeq ($(CONFIG),Release)
-$(eval $(call LINK_RULE,test_unstripped,$(test_SOURCES),$(LIBS),$(DEPS)))
-$(eval $(call STRIP_RULE,test,test_unstripped))
+$(eval $(call LINK_RULE,facedetect_unstripped,$(facedetect_SOURCES),$(LIBS),$(DEPS)))
+$(eval $(call STRIP_RULE,facedetect,facedetect_unstripped))
 else
-$(eval $(call LINK_RULE,test,$(test_SOURCES),$(LIBS),$(DEPS)))
+$(eval $(call LINK_RULE,facedetect,$(facedetect_SOURCES),$(LIBS),$(DEPS)))
 endif
 
 $(eval $(call NMF_RULE,$(TARGET),))

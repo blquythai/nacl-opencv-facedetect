@@ -14,11 +14,11 @@ using namespace std;
 using namespace cv;
 
 class GetURLHandler;
-class testInstance : public pp::Instance {
+class facedetectInstance : public pp::Instance {
     public:
         IplImage* frame;
-        explicit testInstance(PP_Instance instance) : pp::Instance(instance) {}
-        virtual ~testInstance() {}
+        explicit facedetectInstance(PP_Instance instance) : pp::Instance(instance) {}
+        virtual ~facedetectInstance() {}
 
         virtual void HandleMessage(const pp::Var&);
         void HandleImage(const std::string&);

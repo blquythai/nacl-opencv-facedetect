@@ -8,7 +8,7 @@
 #include "ppapi/cpp/instance.h"
 #include "ppapi/utility/completion_callback_factory.h"
 
-#include "test.h"
+#include "facedetect.h"
 #define READ_BUFFER_SIZE 4096
 
 // GetURLHandler is used to download data from |url|. When download is
@@ -19,13 +19,13 @@
 // GetURLHandler* handler* = GetURLHandler::Create(instance,url);
 // handler->Start();
 //
-class testInstance;
+class facedetectInstance;
 class GetURLHandler {
  public:
   // Creates instance of GetURLHandler on the heap.
   // GetURLHandler objects shall be created only on the heap (they
   // self-destroy when all data is in).
-  static GetURLHandler* Create(testInstance* instance_,
+  static GetURLHandler* Create(facedetectInstance* instance_,
                                const std::string& url);
   // Initiates page (URL) download.
   void Start();
@@ -35,7 +35,7 @@ class GetURLHandler {
   pp::CompletionCallbackFactory<GetURLHandler> cc_factory_;
 
  private:
-  GetURLHandler(testInstance* instance_, const std::string& url);
+  GetURLHandler(facedetectInstance* instance_, const std::string& url);
   ~GetURLHandler();
 
   // Callback fo the pp::URLLoader::Open().
@@ -68,7 +68,7 @@ class GetURLHandler {
                           const std::string& text,
                           bool success);
 
-  testInstance * instance_;  // Weak pointer.
+  facedetectInstance * instance_;  // Weak pointer.
   std::string url_;  // URL to be downloaded.
   pp::URLRequestInfo url_request_;
   pp::URLLoader url_loader_;  // URLLoader provides an API to download URLs.

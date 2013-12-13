@@ -35,8 +35,3 @@ $(eval $(call LINK_RULE,facedetect,$(facedetect_SOURCES),$(LIBS),$(DEPS)))
 endif
 
 $(eval $(call NMF_RULE,$(TARGET),))
-
-.PHONY: opencv
-opencv:
-	cd ~/apps/OpenCV-2.4.2/nacl/m32 && make opencv_core -j8 && \
-	cp lib/libopencv_core.so.2.4.2 $(NACL_PREFIX)/lib32/libopencv_core.so.2.4.2

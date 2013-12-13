@@ -4,7 +4,7 @@
 
 #
 # GNU Make based build file.  For details on GNU Make see:
-#   http://www.gnu.org/software/make/manual/make.html
+# http://www.gnu.org/software/make/manual/make.html
 #
 VALID_TOOLCHAINS:=glibc
 

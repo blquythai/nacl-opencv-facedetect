@@ -6,6 +6,8 @@
   <script type="text/javascript">
     naclModule = null;  // Global application object.
     statusText = 'NO-STATUS';
+    var img;
+
     function moduleRequest() {
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', 'face1.jpg', true);
@@ -37,7 +39,24 @@
     // (in C) or pp::Instance.PostMessage() (in C++).  This implementation
     // simply displays the content of the message in an alert panel.
     function handleMessage(message_event) {
-      alert(message_event.data);
+        // draw image on canvas 
+        var canvas = document.getElementById("myCanvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        var context = canvas.getContext("2d");
+        context.drawImage(img, 0, 0);
+
+        // draw rectangles on the image
+        rect = eval(message_event.data);
+        for(i = 0; i < rect.length; i++){
+            context.strokeStyle = "#FF0000";
+            context.moveTo(rect[i].x, rect[i].y);
+            context.lineTo(rect[i].x + rect[i].width, rect[i].y);
+            context.lineTo(rect[i].x + rect[i].width, rect[i].y+rect[i].height);
+            context.lineTo(rect[i].x, rect[i].y+rect[i].height);
+            context.lineTo(rect[i].x, rect[i].y);
+            context.stroke();
+        }
     }
 
     // If the page loads before the Native Client module loads, then set the
@@ -72,28 +91,13 @@
 </head>
 <body onload="pageDidLoad()">
 
-<h1>Native Client Module test</h1>
+<h1>Native Client OpenCV 2.4.3 Haar Face Detection Example</h1>
 <p>
-  <!-- Load the published .nexe.  This includes the 'nacl' attribute which
-  shows how to load multi-architecture modules.  Each entry in the "nexes"
-  object in the .nmf manifest file is a key-value pair: the key is the
-  instruction set architecture ('x86-32', 'x86-64', etc.); the value is a URL
-  for the desired NaCl module.
-  To load the debug versions of your .nexes, set the 'nacl' attribute to the
-  _dbg.nmf version of the manifest file.
-
-  Note: Since this NaCl module does not use any real-estate in the browser,
-  it's width and height are set to 0.
-
-  Note: The <EMBED> element is wrapped inside a <DIV>, which has both a 'load'
-  and a 'message' event listener attached.  This wrapping method is used
-  instead of attaching the event listeners directly to the <EMBED> element to
-  ensure that the listeners are active before the NaCl module 'load' event
-  fires.  This also allows you to use PPB_Messaging.PostMessage() (in C) or
-  pp::Instance.PostMessage() (in C++) from within the initialization code in
-  your NaCl module.
-  -->
-  <div id="img"></div>
+  <div>
+      <div id="img" style="float:left"></div>
+      <canvas id="myCanvas"></canvas>
+  </div>
+  <div style="clear:both"></div>
   <div id="listener">
 	<input type="button" id="request" value="Request" />
     <script type="text/javascript">
@@ -109,6 +113,7 @@
        width=0 height=0
        src="glibc/Debug/facedetect.nmf"
        type="application/x-nacl" />
+
   </div>
 </p>
 

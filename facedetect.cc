@@ -147,12 +147,13 @@ void facedetectInstance::RecognizeFace(){
     //-- Detect faces
     face_cascade.detectMultiScale( frame_gray, faces, 1.1, 2,
             0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
-
+    ss << "[";
     for( unsigned int i = 0; i < faces.size(); i++ ) {
-        ss << "Face #" << i << " x=" << faces[i].x << " width=" << faces[i].width 
-        << " y=" << faces[i].y << " height=" << faces[i].height << "\n";
+        ss << "{" << "x:" << faces[i].x << ",width:" << faces[i].width 
+        << ",y:" << faces[i].y << ",height:" << faces[i].height << "},\n";
             //Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
     }
+    ss << "]";
 
 	this->PostMessage(pp::Var(ss.str()));
     fprintf(stderr, "Finish running face detection\n");
